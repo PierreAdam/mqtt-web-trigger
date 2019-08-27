@@ -13,7 +13,7 @@ RUN apk update \
         fontconfig \
         ttf-dejavu \
         bash \
-	    nss
+	    nss \
     && adduser -D -g "" -u 1000 javauser \
     && mkdir -p /opt/playframework \
     && chown javauser:javauser /opt/playframework \

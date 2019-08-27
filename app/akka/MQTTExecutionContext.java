@@ -28,17 +28,17 @@ import play.libs.concurrent.CustomExecutionContext;
 import javax.inject.Inject;
 
 /**
- * MQTTPublishExecutionContext.
+ * MQTTExecutionContext.
  * This is used to specify a custom akka thread pool in order to publish data into MQTT.
  *
  * @author Pierre Adam
  * @since 19.08.26
  */
-public class MQTTPublishExecutionContext extends CustomExecutionContext {
+public class MQTTExecutionContext extends CustomExecutionContext {
 
     @Inject
-    public MQTTPublishExecutionContext(final ActorSystem actorSystem) {
+    public MQTTExecutionContext(final ActorSystem actorSystem) {
         // uses a custom thread pool defined in application.conf
-        super(actorSystem, "akka.actor.assets-dispatcher");
+        super(actorSystem, "akka.actor.mqtt-dispatcher");
     }
 }

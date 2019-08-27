@@ -23,6 +23,7 @@
 package controllers;
 
 import actions.TokenRequired;
+import akka.MQTTExecutionContext;
 import com.typesafe.config.Config;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import play.data.FormFactory;
@@ -56,18 +57,29 @@ public class HomeController extends AController {
     final Config config;
 
     /**
+     * The Mqtt publish execution context.
+     */
+    final MQTTExecutionContext mqttPublishExecutionContext;
+
+    /**
      * Instantiates a new Home controller.
      *
-     * @param messagesApi the messages api
-     * @param formFactory the form factory
-     * @param mqttService the mqtt service
-     * @param config      the config
+     * @param messagesApi                 the messages api
+     * @param formFactory                 the form factory
+     * @param mqttService                 the mqtt service
+     * @param config                      the config
+     * @param mqttPublishExecutionContext the mqtt execution context
      */
     @Inject
-    protected HomeController(final MessagesApi messagesApi, final FormFactory formFactory, final MQTTService mqttService, final Config config) {
+    protected HomeController(final MessagesApi messagesApi,
+                             final FormFactory formFactory,
+                             final MQTTService mqttService,
+                             final Config config,
+                             final MQTTExecutionContext mqttPublishExecutionContext) {
         super(messagesApi, formFactory);
         this.mqttService = mqttService;
         this.config = config;
+        this.mqttPublishExecutionContext = mqttPublishExecutionContext;
     }
 
     /**
@@ -88,21 +100,22 @@ public class HomeController extends AController {
      */
     @TokenRequired
     public CompletionStage<Result> GET_Trigger(final Http.Request request) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                this.mqttService.getClient().publish(this.config.getString("application.mqtt-topic"), "True".getBytes(), 2, true);
-                return true;
-            } catch (final MqttException e) {
-                this.logger.error("An error occurred while publishing.", e);
-            }
-            return false;
-        }).thenApply(success -> {
-            if (success) {
-                return Results.ok("Triggered !");
-            } else {
-                return Results.internalServerError("Fail to trigger.");
-            }
-        });
-
+        return CompletableFuture
+            .supplyAsync(() -> {
+                try {
+                    this.mqttService.getClient().publish(this.config.getString("application.mqtt-topic"), "True".getBytes(), 2, true);
+                    return true;
+                } catch (final MqttException e) {
+                    this.logger.error("An error occurred while publishing.", e);
+                }
+                return false;
+            }, this.mqttPublishExecutionContext)
+            .thenApply(success -> {
+                if (success) {
+                    return Results.ok("Triggered !");
+                } else {
+                    return Results.internalServerError("Fail to trigger.");
+                }
+            });
     }
 }
